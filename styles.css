@@ -125,10 +125,27 @@ select {
     border-radius: .5rem
 }
 
+/* força o botão "Eliminar" a quebrar linha e ficar separado dos outros */
 .actions {
     display: flex;
-    gap: .5rem;
-    margin-top: .5rem
+    gap: .16rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+button.danger {
+  margin-left: 1rem !important;   /* espaço horizontal*/
+  margin-top: .30rem !important;  /* espaço vertical*/
+}
+.actions, .btn-group, .action-buttons, td .actions {
+  display: flex;
+  gap: 1rem !important;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.actions > * {
+    margin: 0;
 }
 
 .list-header {
