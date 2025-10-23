@@ -417,46 +417,6 @@ function setupEvents() {
     renderList();
   });
 
-  $('#exportBtn').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify(cows, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const date = new Date().toISOString().slice(0,10);
-    a.href = url;
-    a.download = `ganado-${date}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  $('#importInput').addEventListener('change', async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text);
-      if (!Array.isArray(data)) throw new Error('Formato inválido: se esperaba un arreglo de vacas');
-      for (const c of data) {
-        if (typeof c.id !== 'string') throw new Error('Vaca sin id válido');
-        c.pesos = Array.isArray(c.pesos) ? c.pesos : [];
-        c.enfermedades = Array.isArray(c.enfermedades) ? c.enfermedades : [];
-        c.crias = Array.isArray(c.crias) ? c.crias : [];
-        c.vacunas = Array.isArray(c.vacunas) ? c.vacunas : [];
-        c.pesoIngreso = typeof c.pesoIngreso === 'number' ? c.pesoIngreso : 0;
-        c.categoria = typeof c.categoria === 'string' ? c.categoria : '';
-      }
-      cows = data;
-      save();
-      renderList();
-      setDetailVisible(false);
-      alert('Datos importados correctamente.');
-    } catch (err) {
-      console.error(err);
-      alert('No se pudo importar el archivo. Verifica el formato JSON.');
-    } finally {
-      e.target.value = '';
-    }
-  });
-
   $('#clearAllBtn').addEventListener('click', () => {
     if (confirm('¿Borrar todas las vacas? Esta acción no se puede deshacer.')) {
       cows = [];
