@@ -1,12 +1,189 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8">
+  <title>Gestión de Ganado - CodeDay</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-    
+  <header>
+    <h1>Gestión de Ganado</h1>
+    <div class="toolbar">
+      <input id="searchInput" type="search" placeholder="Buscar por ID o raza...">
+      <button id="exportBtn">Exportar JSON</button>
+      <label class="import-label">
+        Importar JSON
+        <input id="importInput" type="file" accept="application/json" hidden>
+      </label>
+      <button id="clearAllBtn" class="danger">Borrar todo</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2 id="formTitle">Registrar vaca</h2>
+      <form id="cowForm">
+        <div class="grid">
+          <label>
+            ID de la vaca
+            <input id="cowId" name="id" type="text" required placeholder="Ej: V-001">
+          </label>
+          <label>
+            Fecha de nacimiento
+            <input id="cowBirth" name="nacimiento" type="date" required>
+          </label>
+          <label>
+            Raza
+            <input id="cowBreed" name="raza" type="text" required placeholder="Ej: Holstein">
+          </label>
+        </div>
+        <div class="actions">
+          <button type="submit" id="saveCowBtn">Guardar</button>
+          <button type="button" id="resetFormBtn" class="secondary">Limpiar</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="list-header">
+        <h2>Vacas registradas</h2>
+        <span id="cowCount" class="muted"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nacimiento</th>
+              <th>Raza</th>
+              <th>Peso actual (kg)</th>
+              <th>Crías</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="cowTableBody">
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="detailSection" class="card hidden">
+      <div class="detail-header">
+        <h2>Detalle de vaca: <span id="detailCowId"></span></h2>
+        <button id="backToListBtn" class="secondary">Volver</button>
+      </div>
+
+      <div class="detail-content">
+        <div class="subsection">
+          <h3>Datos generales</h3>
+          <div class="grid">
+            <div><strong>Nacimiento:</strong> <span id="detailBirth"></span></div>
+            <div><strong>Raza:</strong> <span id="detailBreed"></span></div>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <h3>Peso</h3>
+          <form id="weightForm" class="inline-form">
+            <label>
+              Fecha
+              <input id="weightDate" type="date" required>
+            </label>
+            <label>
+              Peso (kg)
+              <input id="weightKg" type="number" min="0" step="0.1" required>
+            </label>
+            <button type="submit">Agregar</button>
+          </form>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Fecha</th><th>Peso (kg)</th><th>Acciones</th></tr>
+              </thead>
+              <tbody id="weightTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <h3>Enfermedades y tratamientos</h3>
+          <form id="illnessForm" class="inline-form">
+            <label>
+              Diagnóstico
+              <input id="illnessDiag" type="text" required placeholder="Ej: Mastitis">
+            </label>
+            <label>
+              Fecha
+              <input id="illnessDate" type="date" required>
+            </label>
+            <label>
+              Tratamiento
+              <input id="treatName" type="text" placeholder="Nombre del tratamiento" required>
+            </label>
+            <label>
+              Dosis
+              <input id="treatDose" type="text" placeholder="Ej: 10 ml cada 12h" required>
+            </label>
+            <label>
+              Inicio
+              <input id="treatStart" type="date" required>
+            </label>
+            <label>
+              Fin
+              <input id="treatEnd" type="date" required>
+            </label>
+            <button type="submit">Agregar</button>
+          </form>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Diagnóstico</th>
+                  <th>Tratamiento</th>
+                  <th>Dosis</th>
+                  <th>Inicio</th>
+                  <th>Fin</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="illnessTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="subsection">
+          <h3>Crías</h3>
+          <form id="offspringForm" class="inline-form">
+            <label>
+              ID cría
+              <input id="offspringId" type="text" required placeholder="Ej: V-101">
+            </label>
+            <label>
+              Fecha de nacimiento
+              <input id="offspringBirth" type="date" required>
+            </label>
+            <button type="submit">Agregar</button>
+          </form>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>ID</th><th>Nacimiento</th><th>Acciones</th></tr>
+              </thead>
+              <tbody id="offspringTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <small>LocalStorage para persistencia. Importa/Exporta JSON para respaldos.</small>
+  </footer>
+
+  <script src="./app.js"></script>
 </body>
 </html>
