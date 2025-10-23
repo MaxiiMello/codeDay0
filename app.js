@@ -1,28 +1,12 @@
-// App de gestión de ganado con persistencia en localStorage
-// Estructura de datos:
-// Cow {
-//   id: string,
-//   nacimiento: 'YYYY-MM-DD',
-//   raza: string,
-//   pesos: Array<{ fecha: 'YYYY-MM-DD', kg: number }>,
-//   enfermedades: Array<{
-//     fecha: 'YYYY-MM-DD',
-//     diagnostico: string,
-//     tratamiento: { nombre: string, dosis: string, inicio: 'YYYY-MM-DD', fin: 'YYYY-MM-DD' }
-//   }>,
-//   crias: Array<{ id: string, nacimiento: 'YYYY-MM-DD' }>
-// }
-
 const STORE_KEY = 'cows';
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
 let cows = [];
-let editingCowId = null; // null = creando; string = editando
-let selectedCowId = null; // para la vista de detalle
+let editingCowId = null;
+let selectedCowId = null;
 
-// Utilidades
 const toNumber = (v) => Number.parseFloat(v);
 const fmtDate = (s) => s || '';
 const byId = (id) => cows.find(c => c.id === id);
@@ -36,7 +20,6 @@ const load = () => {
   }
 };
 
-// Render principal
 function renderList() {
   const tbody = $('#cowTableBody');
   const term = $('#searchInput').value.trim().toLowerCase();
@@ -52,13 +35,22 @@ function renderList() {
 
   tbody.innerHTML = '';
   for (const c of filtered) {
-    const pesoActual = c.pesos.length ? c.pesos[c.pesos.length - 1].kg : '-';
+    const sortedW = (c.pesos || []).slice().sort((a,b)=> a.fecha.localeCompare(b.fecha));
+    const lastW = sortedW.length ? sortedW[sortedW.length - 1].kg : null;
+    const pesoActual = lastW ?? '-';
+    const entrada = typeof c.pesoIngreso === 'number' ? c.pesoIngreso : null;
+    const ganancia = lastW != null && entrada != null ? (lastW - entrada).toFixed(2) : '-';
+    const vacCount = (c.vacunas?.length || 0);
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${escapeHtml(c.id)}</td>
       <td>${escapeHtml(c.nacimiento)}</td>
       <td>${escapeHtml(c.raza)}</td>
+      <td>${entrada != null ? entrada : '-'}</td>
+      <td>${escapeHtml(c.categoria || '-')}</td>
       <td>${pesoActual}</td>
+      <td>${ganancia}</td>
+      <td><span class="badge">${vacCount}</span></td>
       <td><span class="badge">${c.crias.length}</span></td>
       <td>
         <button data-action="view" data-id="${encodeAttr(c.id)}">Ver</button>
@@ -77,15 +69,19 @@ function resetForm() {
   $('#cowId').disabled = false;
   $('#cowBirth').value = '';
   $('#cowBreed').value = '';
+  $('#cowEntryWeight').value = '';
+  $('#cowCategory').value = '';
 }
 
 function fillForm(cow) {
   editingCowId = cow.id;
   $('#formTitle').textContent = `Editar vaca (${cow.id})`;
   $('#cowId').value = cow.id;
-  $('#cowId').disabled = true; // ID no se cambia
+  $('#cowId').disabled = true;
   $('#cowBirth').value = cow.nacimiento;
   $('#cowBreed').value = cow.raza;
+  $('#cowEntryWeight').value = cow.pesoIngreso ?? '';
+  $('#cowCategory').value = cow.categoria || '';
 }
 
 function setDetailVisible(visible) {
@@ -99,8 +95,23 @@ function renderDetail(id) {
   $('#detailCowId').textContent = cow.id;
   $('#detailBirth').textContent = cow.nacimiento;
   $('#detailBreed').textContent = cow.raza;
+  $('#detailEntryWeight').textContent = typeof cow.pesoIngreso === 'number' ? cow.pesoIngreso : '-';
+  $('#detailCategory').textContent = cow.categoria || '-';
 
-  // Pesos
+  const sortedW = (cow.pesos || []).slice().sort((a,b)=> a.fecha.localeCompare(b.fecha));
+  const firstW = sortedW.length ? sortedW[0] : null;
+  const lastW = sortedW.length ? sortedW[sortedW.length - 1] : null;
+  const gain = lastW && typeof cow.pesoIngreso === 'number' ? (lastW.kg - cow.pesoIngreso) : null;
+  $('#detailGain').textContent = gain != null ? gain.toFixed(2) : '-';
+  let gmd = '-';
+  if (sortedW.length >= 2) {
+    const d1 = new Date(sortedW[0].fecha);
+    const d2 = new Date(sortedW[sortedW.length - 1].fecha);
+    const days = Math.max(0, Math.round((d2 - d1) / 86400000));
+    if (days > 0) gmd = ((sortedW[sortedW.length - 1].kg - sortedW[0].kg) / days).toFixed(3);
+  }
+  $('#detailGmd').textContent = gmd;
+
   const wtbody = $('#weightTableBody');
   wtbody.innerHTML = '';
   cow.pesos
@@ -116,7 +127,6 @@ function renderDetail(id) {
       wtbody.appendChild(tr);
     });
 
-  // Enfermedades
   const itbody = $('#illnessTableBody');
   itbody.innerHTML = '';
   cow.enfermedades
@@ -136,7 +146,6 @@ function renderDetail(id) {
       itbody.appendChild(tr);
     });
 
-  // Crías
   const otbody = $('#offspringTableBody');
   otbody.innerHTML = '';
   cow.crias
@@ -151,31 +160,48 @@ function renderDetail(id) {
       `;
       otbody.appendChild(tr);
     });
+
+  const vtbody = $('#vaccineTableBody');
+  vtbody.innerHTML = '';
+  (cow.vacunas || [])
+    .slice()
+    .sort((a,b)=> a.fecha.localeCompare(b.fecha))
+    .forEach((v, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(v.fecha)}</td>
+        <td>${escapeHtml(v.nombre)}</td>
+        <td>${escapeHtml(v.lote || '')}</td>
+        <td>${escapeHtml(v.dosis || '')}</td>
+        <td>${typeof v.retiro === 'number' ? v.retiro : (v.retiro || '')}</td>
+        <td><button class="danger" data-action="del-vaccine" data-id="${encodeAttr(cow.id)}" data-index="${idx}">Quitar</button></td>
+      `;
+      vtbody.appendChild(tr);
+    });
 }
 
 function openDetail(id) {
   selectedCowId = id;
   renderDetail(id);
   setDetailVisible(true);
-  // scroll to detail
   $('#detailSection').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
-// Eventos principales
 function setupEvents() {
-  // Crear / actualizar vaca
   $('#cowForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const id = $('#cowId').value.trim();
     const nacimiento = $('#cowBirth').value;
     const raza = $('#cowBreed').value.trim();
+    const pesoIngresoVal = $('#cowEntryWeight').value;
+    const categoria = $('#cowCategory').value;
+    const pesoIngreso = toNumber(pesoIngresoVal);
 
-    if (!id || !nacimiento || !raza) {
-      alert('Completa todos los campos.');
+    if (!id || !nacimiento || !raza || !categoria || Number.isNaN(pesoIngreso) || pesoIngreso < 0) {
+      alert('Completa todos los campos (peso de ingreso debe ser válido).');
       return;
     }
     if (!editingCowId) {
-      // Crear
       if (byId(id)) {
         alert('Ya existe una vaca con ese ID.');
         return;
@@ -184,17 +210,21 @@ function setupEvents() {
         id,
         nacimiento,
         raza,
+        pesoIngreso,
+        categoria,
         pesos: [],
         enfermedades: [],
-        crias: []
+        crias: [],
+        vacunas: []
       };
       cows.push(cow);
     } else {
-      // Editar
       const cow = byId(editingCowId);
       if (!cow) return;
       cow.nacimiento = nacimiento;
       cow.raza = raza;
+      cow.pesoIngreso = pesoIngreso;
+      cow.categoria = categoria;
     }
     save();
     renderList();
@@ -203,7 +233,6 @@ function setupEvents() {
 
   $('#resetFormBtn').addEventListener('click', () => resetForm());
 
-  // Acciones en la tabla de vacas
   $('#cowTableBody').addEventListener('click', (e) => {
     const btn = e.target.closest('button');
     if (!btn) return;
@@ -229,16 +258,13 @@ function setupEvents() {
     }
   });
 
-  // Buscar
   $('#searchInput').addEventListener('input', () => renderList());
 
-  // Volver
   $('#backToListBtn').addEventListener('click', () => {
     setDetailVisible(false);
     selectedCowId = null;
   });
 
-  // Pesos
   $('#weightForm').addEventListener('submit', (e) => {
     e.preventDefault();
     if (!selectedCowId) return;
@@ -273,7 +299,6 @@ function setupEvents() {
     renderList();
   });
 
-  // Enfermedades
   $('#illnessForm').addEventListener('submit', (e) => {
     e.preventDefault();
     if (!selectedCowId) return;
@@ -318,7 +343,6 @@ function setupEvents() {
     renderDetail(id);
   });
 
-  // Crías
   $('#offspringForm').addEventListener('submit', (e) => {
     e.preventDefault();
     if (!selectedCowId) return;
@@ -350,7 +374,49 @@ function setupEvents() {
     renderDetail(id);
   });
 
-  // Exportar / Importar / Borrar todo
+  $('#vaccineForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!selectedCowId) return;
+    const nombre = $('#vaccineName').value.trim();
+    const fecha = $('#vaccineDate').value;
+    const lote = $('#vaccineLot').value.trim();
+    const dosis = $('#vaccineDose').value.trim();
+    const retiroRaw = $('#vaccineWithdrawal').value;
+    const retiro = retiroRaw === '' ? '' : Number.parseInt(retiroRaw, 10);
+
+    if (!nombre || !fecha || !lote || !dosis) {
+      alert('Completa vacuna, fecha, lote y dosis.');
+      return;
+    }
+    if (retiro !== '' && (Number.isNaN(retiro) || retiro < 0)) {
+      alert('El retiro debe ser un número de días válido o dejarlo vacío.');
+      return;
+    }
+
+    const cow = byId(selectedCowId);
+    cow.vacunas = Array.isArray(cow.vacunas) ? cow.vacunas : [];
+    cow.vacunas.push({ nombre, fecha, lote, dosis, retiro });
+    cow.vacunas.sort((a,b)=> a.fecha.localeCompare(b.fecha));
+    save();
+    renderDetail(selectedCowId);
+    renderList();
+    $('#vaccineForm').reset();
+  });
+
+  $('#vaccineTableBody').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    if (btn.dataset.action !== 'del-vaccine') return;
+    const id = btn.dataset.id;
+    const index = Number(btn.dataset.index);
+    const cow = byId(id);
+    if (!cow) return;
+    cow.vacunas.splice(index,1);
+    save();
+    renderDetail(id);
+    renderList();
+  });
+
   $('#exportBtn').addEventListener('click', () => {
     const blob = new Blob([JSON.stringify(cows, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -369,12 +435,14 @@ function setupEvents() {
       const text = await file.text();
       const data = JSON.parse(text);
       if (!Array.isArray(data)) throw new Error('Formato inválido: se esperaba un arreglo de vacas');
-      // Validación mínima
       for (const c of data) {
         if (typeof c.id !== 'string') throw new Error('Vaca sin id válido');
         c.pesos = Array.isArray(c.pesos) ? c.pesos : [];
         c.enfermedades = Array.isArray(c.enfermedades) ? c.enfermedades : [];
         c.crias = Array.isArray(c.crias) ? c.crias : [];
+        c.vacunas = Array.isArray(c.vacunas) ? c.vacunas : [];
+        c.pesoIngreso = typeof c.pesoIngreso === 'number' ? c.pesoIngreso : 0;
+        c.categoria = typeof c.categoria === 'string' ? c.categoria : '';
       }
       cows = data;
       save();
@@ -399,7 +467,6 @@ function setupEvents() {
   });
 }
 
-// Seguridad básica para HTML
 function escapeHtml(s) {
   return String(s)
     .replaceAll('&','&amp;')
@@ -409,13 +476,19 @@ function escapeHtml(s) {
     .replaceAll("'","&#39;");
 }
 function encodeAttr(s) {
-  // evita inyección en atributos data-*
   return String(s).replaceAll('"','&quot;').replaceAll("'","&#39;");
 }
 
-// Init
 function init() {
   load();
+  for (const c of cows) {
+    c.vacunas = Array.isArray(c.vacunas) ? c.vacunas : [];
+    if (typeof c.pesoIngreso !== 'number') c.pesoIngreso = 0;
+    if (typeof c.categoria !== 'string') c.categoria = '';
+    c.pesos = Array.isArray(c.pesos) ? c.pesos : [];
+    c.enfermedades = Array.isArray(c.enfermedades) ? c.enfermedades : [];
+    c.crias = Array.isArray(c.crias) ? c.crias : [];
+  }
   setupEvents();
   renderList();
   setDetailVisible(false);

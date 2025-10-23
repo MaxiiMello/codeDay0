@@ -37,6 +37,23 @@
             Raza
             <input id="cowBreed" name="raza" type="text" required placeholder="Ej: Holstein">
           </label>
+          <label>
+            Peso de ingreso (kg)
+            <input id="cowEntryWeight" name="pesoIngreso" type="number" min="0" step="0.1" required placeholder="Ej: 220.0">
+          </label>
+          <label>
+            Categoría
+            <select id="cowCategory" name="categoria" required>
+              <option value="" disabled selected>Selecciona...</option>
+              <option value="ternero">Ternero</option>
+              <option value="destete">Destete</option>
+              <option value="novillo">Novillo</option>
+              <option value="vaquillona">Vaquillona</option>
+              <option value="vaca">Vaca</option>
+              <option value="toro">Toro</option>
+              <option value="engorde">Engorde</option>
+            </select>
+          </label>
         </div>
         <div class="actions">
           <button type="submit" id="saveCowBtn">Guardar</button>
@@ -57,13 +74,16 @@
               <th>ID</th>
               <th>Nacimiento</th>
               <th>Raza</th>
+              <th>Peso ingreso (kg)</th>
+              <th>Categoría</th>
               <th>Peso actual (kg)</th>
+              <th>Ganancia (kg)</th>
+              <th>Vacunas</th>
               <th>Crías</th>
               <th>Acciones</th>
             </tr>
           </thead>
-          <tbody id="cowTableBody">
-          </tbody>
+          <tbody id="cowTableBody"></tbody>
         </table>
       </div>
     </section>
@@ -80,6 +100,10 @@
           <div class="grid">
             <div><strong>Nacimiento:</strong> <span id="detailBirth"></span></div>
             <div><strong>Raza:</strong> <span id="detailBreed"></span></div>
+            <div><strong>Peso ingreso:</strong> <span id="detailEntryWeight"></span> kg</div>
+            <div><strong>Categoría:</strong> <span id="detailCategory"></span></div>
+            <div><strong>Ganancia total:</strong> <span id="detailGain"></span> kg</div>
+            <div><strong>GMD:</strong> <span id="detailGmd"></span> kg/d</div>
           </div>
         </div>
 
@@ -176,13 +200,51 @@
           </div>
         </div>
 
+        <div class="subsection">
+          <h3>Vacunas</h3>
+          <form id="vaccineForm" class="inline-form">
+            <label>
+              Vacuna
+              <input id="vaccineName" type="text" required placeholder="Ej: Aftosa">
+            </label>
+            <label>
+              Fecha
+              <input id="vaccineDate" type="date" required>
+            </label>
+            <label>
+              Lote
+              <input id="vaccineLot" type="text" required placeholder="Ej: L1234">
+            </label>
+            <label>
+              Dosis
+              <input id="vaccineDose" type="text" required placeholder="Ej: 2 ml SC">
+            </label>
+            <label>
+              Retiro (días)
+              <input id="vaccineWithdrawal" type="number" min="0" step="1" placeholder="0">
+            </label>
+            <button type="submit">Agregar</button>
+          </form>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Vacuna</th>
+                  <th>Lote</th>
+                  <th>Dosis</th>
+                  <th>Retiro (d)</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="vaccineTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </section>
   </main>
-
-  <footer>
-    <small>LocalStorage para persistencia. Importa/Exporta JSON para respaldos.</small>
-  </footer>
 
   <script src="./app.js"></script>
 </body>

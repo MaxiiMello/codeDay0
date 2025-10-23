@@ -117,6 +117,14 @@ input {
     border-radius: .5rem
 }
 
+select {
+    padding: .55rem .6rem;
+    border: 1px solid var(--border);
+    background: #0e1530;
+    color: var(--text);
+    border-radius: .5rem
+}
+
 .actions {
     display: flex;
     gap: .5rem;
